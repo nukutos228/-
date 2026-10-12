@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Квиз: священные кошки Древнего Египта</title>
+<style>
+  :root{
+    --night:#14213D; --night2:#1F3A5F; --gold:#C9A227; --gold-soft:#E0C36A;
+    --paper:#EEF2F7; --ink:#14213D; --muted:#4A5B73;
+    --ok:#12665F; --ok-bg:#D8EFEA; --bad:#9C3E1F; --bad-bg:#F6DDD3;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    min-height:100vh; background:var(--night); color:var(--ink);
+    font-family:Calibri,"Segoe UI",Arial,sans-serif; font-size:18px; line-height:1.5;
+    display:flex; justify-content:center; padding:24px 16px 48px;
+  }
+  main{width:100%; max-width:680px}
+  header{color:#fff; margin:8px 0 24px}
+  header h1{font-family:Cambria,Georgia,serif; font-size:clamp(26px,6vw,38px); line-height:1.15; margin:0 0 6px}
+  header p{margin:0; color:var(--gold-soft)}
+  .card{background:var(--paper); border-radius:14px; padding:24px; box-shadow:0 6px 24px rgba(0,0,0,.25)}
+  .progress{display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:15px; margin-bottom:10px}
+  .bar{height:8px; background:#cfd7e3; border-radius:8px; overflow:hidden; margin-bottom:20px}
+  .bar span{display:block; height:100%; width:0; background:var(--gold); transition:width .3s}
+  h2{font-family:Cambria,Georgia,serif; font-size:clamp(22px,5vw,28px); line-height:1.25; margin:0 0 18px}
+  .opts{display:grid; gap:10px; margin:0; padding:0; list-style:none}
+  .opt{
+    width:100%; text-align:left; font:inherit; color:var(--ink);
+    background:#fff; border:2px solid #c3cddb; border-radius:10px; padding:12px 14px; cursor:pointer;
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .opt:hover:not(:disabled){border-color:var(--night2)}
+  .opt:focus-visible,.btn:focus-visible{outline:3px solid var(--gold); outline-offset:2px}
+  .opt .mark{flex:0 0 26px; height:26px; border-radius:50%; border:2px solid #c3cddb; display:grid; place-items:center; font-weight:700; font-size:15px}
+  .opt:disabled{cursor:default}
+  .opt.correct{background:var(--ok-bg); border-color:var(--ok)}
+  .opt.correct .mark{background:var(--ok); border-color:var(--ok); color:#fff}
+  .opt.wrong{background:var(--bad-bg); border-color:var(--bad)}
+  .opt.wrong .mark{background:var(--bad); border-color:var(--bad); color:#fff}
+  .fb{margin-top:18px; padding:12px 14px; border-radius:10px; background:#fff; border:2px solid #c3cddb; display:none}
+  .fb.show{display:block}
+  .fb b{display:block; margin-bottom:2px}
+  .btn{
+    font:inherit; font-weight:700; background:var(--gold); color:var(--ink); border:0; border-radius:10px;
+    padding:12px 22px; margin-top:18px; cursor:pointer;
+  }
+  .btn:hover{background:var(--gold-soft)}
+  .result h2{margin-bottom:6px}
+  .score{font-family:Cambria,Georgia,serif; font-size:56px; line-height:1; margin:10px 0}
+  .review{margin:18px 0 0; padding:0; list-style:none; display:grid; gap:8px; font-size:16px}
+  .review li{background:#fff; border-radius:8px; padding:8px 12px; border:2px solid #c3cddb}
+  .review li.ok{border-color:var(--ok)} .review li.no{border-color:var(--bad)}
+  .review .a{color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){.bar span{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Квиз: священные кошки Древнего Египта</h1>
+    <p>12 вопросов по презентации</p>
+  </header>
+  <section class="card" id="app" aria-live="polite"></section>
+</main>
+
+<script>
+const QUESTIONS = [
+  { q:"Чем кошки были полезны египтянам?",
+    a:["Ловили мышей и крыс и защищали зерно","Пасли скот","Возили грузы","Охраняли пирамиды"],
+    c:0, why:"Зерно хранили в амбарах, и кошки спасали его от грызунов." },
+  { q:"От каких опасных животных кошки защищали дома?",
+    a:["От крокодилов","От змей и скорпионов","От львов","От обезьян"],
+    c:1, why:"Кошки охотились на змей и скорпионов." },
+  { q:"Где рисовали кошек рядом с хозяевами?",
+    a:["На монетах","На парусах кораблей","На стенах гробниц","На одежде солдат"],
+    c:2, why:"Кошек рисовали на стенах гробниц рядом с хозяевами." },
+  { q:"Что сделали для любимой кошки принца Тутмоса после её смерти?",
+    a:["Построили маленькую пирамиду","Сделали каменный саркофаг","Отлили золотую статую","Ничего не делали"],
+    c:1, why:"Для кошки принца Тутмоса сделали каменный саркофаг." },
+  { q:"С какой богиней египтяне связывали кошек?",
+    a:["С Исидой","С Нут","С Бастет","С Маат"],
+    c:2, why:"Египтяне верили, что кошка священна и связана с богиней Бастет." },
+  { q:"Какие качества кошек восхищали египтян?",
+    a:["Громкий голос и сила","Смелость, грация, чистоплотность и забота","Умение плавать и летать","Умение считать и писать"],
+    c:1, why:"Кошки смелые, грациозные, чистоплотные и заботятся о котятах." },
+  { q:"Что считалось страшным преступлением?",
+    a:["Накормить кошку","Нарисовать кошку","Убить кошку","Взять кошку в дом"],
+    c:2, why:"Об этом пишет историк Диодор Сицилийский." },
+  { q:"Что нельзя было делать с кошками?",
+    a:["Вывозить их из Египта","Кормить их","Рисовать их","Держать их дома"],
+    c:0, why:"Кошек нельзя было вывозить из Египта." },
+  { q:"Что делали хозяева, когда умирала домашняя кошка?",
+    a:["Устраивали пир","Брили брови","Сажали дерево","Переезжали в другой дом"],
+    c:1, why:"По словам историка Геродота, хозяева брили брови в знак горя." },
+  { q:"Что делали с кошками после смерти?",
+    a:["Мумифицировали, как людей","Бросали в Нил","Отправляли в пустыню","Сжигали без обрядов"],
+    c:0, why:"Кошек бальзамировали и заворачивали в ткань." },
+  { q:"Как по-египетски звучало слово «кошка»?",
+    a:["Кис","Бау","Мау","Рау"],
+    c:2, why:"«Мау» — похоже на мяуканье." },
+  { q:"Где археологи нашли очень много кошачьих мумий?",
+    a:["В Афинах и Риме","В Бубастисе и Саккаре","В Вавилоне и Ниневии","В Пекине и Токио"],
+    c:1, why:"Мумии находили, в том числе, в Бубастисе и Саккаре." },
+];
+
+const app = document.getElementById("app");
+let order, idx, score, history;
+
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function start(){
+  order = QUESTIONS.map(q=>({...q, opts: shuffle(q.a.map((t,i)=>({t, ok:i===q.c})))}));
+  idx = 0; score = 0; history = [];
+  show();
+}
+
+function show(){
+  const q = order[idx], total = order.length;
+  app.innerHTML = `
+    <div class="progress"><span>Вопрос ${idx+1} из ${total}</span><span>Верно: ${score}</span></div>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${idx}"><span style="width:${idx/total*100}%"></span></div>
+    <h2 id="qt">${q.q}</h2>
+    <ul class="opts" aria-labelledby="qt">
+      ${q.opts.map((o,i)=>`<li><button class="opt" data-i="${i}"><span class="mark" aria-hidden="true">${"АБВГ"[i]}</span><span>${o.t}</span></button></li>`).join("")}
+    </ul>
+    <div class="fb" id="fb"></div>
+    <div id="next"></div>`;
+  app.querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>answer(+b.dataset.i)));
+}
+
+function answer(i){
+  const q = order[idx], chosen = q.opts[i];
+  const btns = app.querySelectorAll(".opt");
+  btns.forEach((b,k)=>{
+    b.disabled = true;
+    if(q.opts[k].ok){ b.classList.add("correct"); b.querySelector(".mark").textContent="✓"; }
+    else if(k===i){ b.classList.add("wrong"); b.querySelector(".mark").textContent="✕"; }
+  });
+  if(chosen.ok) score++;
+  history.push({q:q.q, ok:chosen.ok, right:q.opts.find(o=>o.ok).t});
+  const fb = document.getElementById("fb");
+  fb.innerHTML = `<b>${chosen.ok ? "Верно!" : "Неверно."}</b>${q.why}`;
+  fb.classList.add("show");
+  const last = idx === order.length-1;
+  const nx = document.getElementById("next");
+  nx.innerHTML = `<button class="btn" id="go">${last ? "Показать результат" : "Дальше"}</button>`;
+  const go = document.getElementById("go");
+  go.addEventListener("click",()=>{ idx++; last ? finish() : show(); });
+  go.focus();
+}
+
+function finish(){
+  const total = order.length;
+  const msg = score===total ? "Отлично! Ты эксперт по кошкам Древнего Египта."
+    : score>=total*0.75 ? "Очень хорошо! Почти всё знаешь."
+    : score>=total*0.5 ? "Неплохо. Повтори слайды и попробуй ещё раз."
+    : "Стоит перечитать презентацию и попробовать снова.";
+  app.innerHTML = `
+    <div class="result">
+      <h2>Результат</h2>
+      <div class="score">${score} из ${total}</div>
+      <p>${msg}</p>
+      <button class="btn" id="again">Пройти ещё раз</button>
+      <ul class="review">
+        ${history.map(h=>`<li class="${h.ok?"ok":"no"}">${h.ok?"✓":"✕"} ${h.q}${h.ok?"":`<div class="a">Правильно: ${h.right}</div>`}</li>`).join("")}
+      </ul>
+    </div>`;
+  document.getElementById("again").addEventListener("click",start);
+}
+
+start();
+</script>
+</body>
+</html>
